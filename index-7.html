@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KG Ayrıştırma</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #dde1e7;
+    --accent: #00a87a;
+    --accent2: #e85d2f;
+    --text: #1a1a2e;
+    --muted: #8a92a0;
+    --success-bg: #e6f9f3;
+    --error-bg: #fdf0ec;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,168,122,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header {
+    width: 100%; max-width: 480px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .logo { font-size: 13px; font-weight: 800; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+  .logo span { color: var(--muted); }
+  .user-badge { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; display: flex; align-items: center; gap: 8px; }
+  .logout-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 4px 10px; font-size: 10px; cursor: pointer;
+    font-family: 'Syne', sans-serif; transition: all 0.2s;
+  }
+  .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .page { width: 100%; max-width: 480px; display: none; flex-direction: column; align-items: center; }
+  .page.active { display: flex; }
+
+  /* LOGIN */
+  .login-card {
+    width: 100%; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 32px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .login-title { font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 6px; }
+  .login-sub { font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 13px 16px; color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #000;
+    border: none; border-radius: 10px; padding: 15px;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px;
+    cursor: pointer; transition: all 0.2s; margin-top: 6px;
+    position: relative; overflow: hidden;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary.loading::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    animation: shimmer 1s infinite;
+  }
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+
+  .login-err {
+    margin-top: 12px; padding: 10px 14px;
+    background: var(--error-bg); border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 8px; font-size: 12px; color: var(--accent2); display: none;
+  }
+  .login-err.show { display: block; }
+
+  /* MAIN */
+  .card {
+    width: 100%; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card-title { font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 18px; }
+
+  .camera-toggle {
+    width: 100%; background: transparent; border: 2px solid var(--accent);
+    color: var(--accent); border-radius: 10px; padding: 13px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .camera-toggle:hover { background: rgba(0,229,160,0.08); }
+  .camera-toggle.active { background: var(--accent); color: #000; }
+
+  .camera-section {
+    display: none; margin-bottom: 14px; position: relative;
+    border-radius: 12px; overflow: hidden; background: #000;
+  }
+  .camera-section.open { display: block; }
+  #cameraVideo { width: 100%; display: block; border-radius: 12px; max-height: 250px; object-fit: cover; }
+  .camera-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .scan-frame { width: 220px; height: 110px; position: relative; }
+  .scan-frame::before, .scan-frame::after { content: ''; position: absolute; width: 26px; height: 26px; border-color: #00a87a; border-style: solid; }
+  .scan-frame::before { top:0; left:0; border-width: 3px 0 0 3px; }
+  .scan-frame::after  { bottom:0; right:0; border-width: 0 3px 3px 0; }
+  .corner-tr { position:absolute; top:0; right:0; width:26px; height:26px; border-top:3px solid #00a87a; border-right:3px solid #00a87a; }
+  .corner-bl { position:absolute; bottom:0; left:0; width:26px; height:26px; border-bottom:3px solid #00a87a; border-left:3px solid #00a87a; }
+  .scan-line { position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,#00a87a,transparent); animation:scanMove 2s linear infinite; }
+  @keyframes scanMove { 0%{top:8%} 100%{top:88%} }
+  .camera-status { position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:11px; color:var(--accent); font-family:'Space Mono',monospace; background:rgba(0,0,0,0.65); padding:4px; }
+
+  .barcode-wrap { position: relative; margin-bottom: 12px; }
+  .barcode-input {
+    width: 100%; background: var(--bg); border: 2px solid var(--border);
+    border-radius: 10px; padding: 16px 20px; color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 14px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .barcode-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.1); }
+  .barcode-input::placeholder { color: var(--muted); }
+
+  .btn-send {
+    width: 100%; background: var(--accent); color: #000;
+    border: none; border-radius: 10px; padding: 15px;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .btn-send:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-send.loading::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); animation:shimmer 1s infinite; }
+
+  .result { margin-top: 14px; border-radius: 10px; padding: 14px 18px; display: none; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .result.success { display:block; background:var(--success-bg); border:1px solid rgba(0,229,160,0.3); }
+  .result.error   { display:block; background:var(--error-bg);   border:1px solid rgba(255,107,53,0.3); }
+  .result-title { font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+  .result.success .result-title { color:var(--accent); }
+  .result.error   .result-title { color:var(--accent2); }
+  .result-body { font-family:'Space Mono',monospace; font-size:12px; color:var(--text); line-height:1.7; }
+  .result-barcode { font-size:10px; color:var(--muted); margin-top:5px; word-break:break-all; }
+
+  .stats { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .stat-num { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+  .stat-box:nth-child(1) .stat-num { color:var(--text); }
+  .stat-box:nth-child(2) .stat-num { color:var(--accent); }
+  .stat-box:nth-child(3) .stat-num { color:var(--accent2); }
+  .stat-label { font-size:10px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; }
+
+  .log-section { width:100%; }
+  .log-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .log-title { font-size:11px; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; }
+  .log-count { display:inline-block; background:var(--accent); color:#000; font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; margin-left:6px; }
+  .log-clear { font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Syne',sans-serif; transition:color 0.2s; }
+  .log-clear:hover { color:var(--accent2); }
+  .log-list { display:flex; flex-direction:column; gap:7px; max-height:380px; overflow-y:auto; }
+  .log-list::-webkit-scrollbar { width:3px; }
+  .log-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .log-item { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:11px 14px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px; animation:fadeIn 0.25s ease; }
+  .log-item.ok   { border-left:3px solid var(--accent); }
+  .log-item.fail { border-left:3px solid var(--accent2); }
+  .log-barcode { font-family:'Space Mono',monospace; font-size:11px; color:var(--text); word-break:break-all; flex:1; }
+  .log-meta { text-align:right; flex-shrink:0; }
+  .log-badge { font-size:10px; font-weight:700; letter-spacing:0.08em; padding:3px 8px; border-radius:4px; display:block; margin-bottom:3px; }
+  .log-item.ok   .log-badge { background:rgba(0,229,160,0.15); color:var(--accent); }
+  .log-item.fail .log-badge { background:rgba(255,107,53,0.15); color:var(--accent2); }
+  .log-time { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); }
+  .empty-log { text-align:center; padding:28px; color:var(--muted); font-size:13px; background:var(--surface); border:1px dashed var(--border); border-radius:10px; }
+
+  .flash { position:fixed; inset:0; background:rgba(0,168,122,0.15); pointer-events:none; z-index:999; opacity:0; transition:opacity 0.1s; }
+  .flash.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="flash" id="flashEl"></div>
+
+<div class="header">
+  <div class="logo">KG <span>/</span> Ayrıştırma</div>
+  <div class="user-badge">
+    <span id="userLabel" style="display:none"></span>
+    <button class="logout-btn" id="logoutBtn" style="display:none" onclick="logout()">Çıkış</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="page active" id="loginPage">
+  <div class="login-card">
+    <div class="login-title">Giriş Yap</div>
+    <div class="login-sub">Kolay Gelsin hesabınızla giriş yapın</div>
+    <div class="field">
+      <label>Kullanıcı Adı</label>
+      <input type="text" id="loginUser" placeholder="kullanıcı adı" autocomplete="username" />
+    </div>
+    <div class="field">
+      <label>Şifre</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">GİRİŞ YAP</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ANA SAYFA -->
+<div class="page" id="mainPage">
+  <div class="card">
+    <div class="card-title">Barkod Ayrıştır</div>
+    <button class="camera-toggle" id="cameraToggleBtn" onclick="toggleCamera()">
+      <span>📷</span> KAMERA İLE TARA
+    </button>
+    <div class="camera-section" id="cameraSection">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <div class="camera-overlay">
+        <div class="scan-frame">
+          <div class="corner-tr"></div>
+          <div class="corner-bl"></div>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+      <div class="camera-status" id="cameraStatus">Barkodu çerçeveye getirin...</div>
+    </div>
+    <div class="barcode-wrap">
+      <input type="text" class="barcode-input" id="barcodeInput" placeholder="Barkod girin veya okutun..." autocomplete="off" />
+    </div>
+    <button class="btn-send" id="sendBtn" onclick="sendBarcode()">AYRIŞTIR</button>
+    <div class="result" id="result">
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-body" id="resultBody"></div>
+      <div class="result-barcode" id="resultBarcode"></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-box"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Toplam</div></div>
+    <div class="stat-box"><div class="stat-num" id="statOk">0</div><div class="stat-label">Başarılı</div></div>
+    <div class="stat-box"><div class="stat-num" id="statFail">0</div><div class="stat-label">Hatalı</div></div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <div class="log-title">İşlem Geçmişi <span class="log-count" id="logCount">0</span></div>
+      <button class="log-clear" onclick="clearLog()">Temizle</button>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="empty-log">Henüz işlem yapılmadı</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script>
+  let token = localStorage.getItem('kg_token') || '';
+  let savedUser = localStorage.getItem('kg_user') || '';
+  let stats = { total:0, ok:0, fail:0 };
+  let logItems = [];
+  let cameraOpen = false;
+  let codeReader = null;
+  let scanCooldown = false;
+
+  if (token) showMain(savedUser);
+
+  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  document.getElementById('barcodeInput').addEventListener('keydown', e => { if (e.key==='Enter') sendBarcode(); });
+
+  /* ── LOGIN ── */
+  async function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    if (!user || !pass) { showLoginErr('Kullanıcı adı ve şifre gerekli.'); return; }
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'GİRİŞ YAPILIYOR...';
+
+    const body = new URLSearchParams({
+      userName: user, password: pass, grant_type: 'password',
+      channel: '1', CaptchaToken: '', VerificationCode: '', CustomerType: 'null'
+    });
+
+    try {
+      const res = await fetch('/api/proxy?endpoint=login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userName: user, password: pass, grant_type: 'password',
+          channel: '1', CaptchaToken: '', VerificationCode: '', CustomerType: 'null'
+        })
+      });
+
+      const data = await res.json();
+      const tk = data.access_token || data.token || data.Token || data.data?.access_token;
+
+      if (tk) {
+        token = tk;
+        localStorage.setItem('kg_token', token);
+        localStorage.setItem('kg_user', user);
+        showMain(user);
+      } else {
+        const msg = data.message || data.Message || data.error_description || 'Giriş başarısız. Bilgileri kontrol edin.';
+        showLoginErr(msg);
+      }
+    } catch (err) {
+      showLoginErr('Bağlantı hatası: ' + err.message);
+    }
+
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'GİRİŞ YAP';
+  }
+
+  function showLoginErr(msg) {
+    const el = document.getElementById('loginErr');
+    el.textContent = msg; el.classList.add('show');
+  }
+
+  function showMain(user) {
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('mainPage').classList.add('active');
+    document.getElementById('userLabel').textContent = user;
+    document.getElementById('userLabel').style.display = 'inline';
+    document.getElementById('logoutBtn').style.display = 'inline';
+    setTimeout(() => document.getElementById('barcodeInput').focus(), 100);
+  }
+
+  function logout() {
+    token = '';
+    localStorage.removeItem('kg_token');
+    localStorage.removeItem('kg_user');
+    stopCamera();
+    document.getElementById('mainPage').classList.remove('active');
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('userLabel').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'none';
+    document.getElementById('loginErr').classList.remove('show');
+    clearLog();
+  }
+
+  /* ── KAMERA ── */
+  async function toggleCamera() {
+    if (!cameraOpen) {
+      try {
+        if (typeof ZXing === 'undefined') { alert('Barkod kütüphanesi yüklenemedi.'); return; }
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        const devices = await codeReader.listVideoInputDevices();
+        let deviceId = devices[0]?.deviceId;
+        const back = devices.find(d => /back|rear|environment/i.test(d.label));
+        if (back) deviceId = back.deviceId;
+
+        document.getElementById('cameraSection').classList.add('open');
+        document.getElementById('cameraToggleBtn').classList.add('active');
+        document.getElementById('cameraToggleBtn').innerHTML = '<span>⏹</span> KAMERAYI KAPAT';
+        cameraOpen = true;
+
+        await codeReader.decodeFromVideoDevice(deviceId, 'cameraVideo', (result, err) => {
+          if (result && !scanCooldown) {
+            const barcode = result.getText();
+            document.getElementById('cameraStatus').textContent = '✓ ' + barcode.slice(0,24) + '...';
+            flashScreen();
+            document.getElementById('barcodeInput').value = barcode;
+            scanCooldown = true;
+            sendBarcode();
+            setTimeout(() => {
+              scanCooldown = false;
+              document.getElementById('cameraStatus').textContent = 'Barkodu çerçeveye getirin...';
+            }, 2500);
+          }
+        });
+      } catch (err) {
+        alert('Kamera açılamadı: ' + err.message);
+        cameraOpen = false;
+      }
+    } else {
+      stopCamera();
+    }
+  }
+
+  function stopCamera() {
+    if (codeReader) { codeReader.reset(); codeReader = null; }
+    document.getElementById('cameraSection').classList.remove('open');
+    document.getElementById('cameraToggleBtn').classList.remove('active');
+    document.getElementById('cameraToggleBtn').innerHTML = '<span>📷</span> KAMERA İLE TARA';
+    cameraOpen = false;
+  }
+
+  function flashScreen() {
+    const el = document.getElementById('flashEl');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 180);
+  }
+
+  /* ── AYRIŞTIRMA ── */
+  async function sendBarcode() {
+    const barcode = document.getElementById('barcodeInput').value.trim();
+    if (!barcode) return;
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'GÖNDERİLİYOR...';
+
+    try {
+      const res = await fetch('/api/proxy?endpoint=sort', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'bearer ' + token,
+        },
+        body: JSON.stringify({
+          ShipmentItemId: barcode,
+          SortingLevelId: 2,
+          ForceUnload: true,
+          IsRemoveGroup: false,
+          LoadShipmentItemToCourierVehicle: false
+        })
+      });
+
+      if (res.status === 401) {
+        showResult('error', '✗ OTURUM SONA ERDİ', 'Tekrar giriş yapılıyor...', barcode);
+        setTimeout(() => logout(), 1500);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const msg = data.message || data.Message || data.data?.message || 'Ayrıştırma başarılı';
+        showResult('success', '✓ AYRIŞTIRMA TAMAM', msg, barcode);
+        addLog('ok', barcode);
+      } else {
+        const errMsg = data.message || data.Message || data.error || JSON.stringify(data);
+        showResult('error', '✗ HATA', errMsg, barcode);
+        addLog('fail', barcode, errMsg);
+      }
+    } catch (err) {
+      showResult('error', '✗ BAĞLANTI HATASI', 'Sunucuya ulaşılamadı: ' + err.message, barcode);
+      addLog('fail', barcode, err.message);
+    }
+
+    btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'AYRIŞTIR';
+    document.getElementById('barcodeInput').value = '';
+    document.getElementById('barcodeInput').focus();
+  }
+
+  function showResult(type, title, body, barcode) {
+    const el = document.getElementById('result');
+    el.className = 'result ' + type;
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultBody').textContent = body;
+    document.getElementById('resultBarcode').textContent = 'Barkod: ' + barcode;
+  }
+
+  function addLog(status, barcode, errMsg) {
+    stats.total++; if (status==='ok') stats.ok++; else stats.fail++;
+    updateStats();
+    logItems.unshift({ status, barcode, time: new Date().toLocaleTimeString('tr-TR'), errMsg });
+    renderLog();
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = stats.total;
+    document.getElementById('statOk').textContent = stats.ok;
+    document.getElementById('statFail').textContent = stats.fail;
+    document.getElementById('logCount').textContent = stats.total;
+  }
+
+  function renderLog() {
+    const list = document.getElementById('logList');
+    if (!logItems.length) { list.innerHTML = '<div class="empty-log">Henüz işlem yapılmadı</div>'; return; }
+    list.innerHTML = logItems.map(item => `
+      <div class="log-item ${item.status}">
+        <div class="log-barcode">${item.barcode}${item.errMsg ? '<br><span style="color:#ff6b35;font-size:10px">'+item.errMsg+'</span>' : ''}</div>
+        <div class="log-meta">
+          <span class="log-badge">${item.status==='ok'?'TAMAM':'HATA'}</span>
+          <span class="log-time">${item.time}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function clearLog() {
+    logItems = []; stats = {total:0,ok:0,fail:0};
+    updateStats(); renderLog();
+    document.getElementById('result').className = 'result';
+  }
+</script>
+</body>
+</html>
