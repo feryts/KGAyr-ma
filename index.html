@@ -664,8 +664,21 @@
                  || data.shipmentItem?.distributionMoyWorkingArea
                  || data.shipmentItem?.DistributionMoyWorkingArea
                  || '';
-        showResult('success', '✓ AYRIŞTIRMA TAMAM', msg, barcode, moy);
-        addLog('ok', barcode, '', moy);
+        // MOY bölge kodunu GetShipmentById'den al
+let moyBolge = moy;
+try {
+  const r2 = await fetch('/api/proxy?endpoint=getshipmentbyid', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'bearer ' + token },
+    body: JSON.stringify({ ShipmentItemId: barcode, IsReturnBarcode: false })
+  });
+  const d2 = await r2.json();
+  const bolge = d2?.Payload?.DeliveryCourierZoneName || d2?.payload?.DeliveryCourierZoneName || '';
+  if (bolge) moyBolge = bolge;
+} catch(e) { console.log('MOY bolge alinamadi:', e.message); }
+
+showResult('success', '✓ AYRIŞTIRMA TAMAM', msg, barcode, moyBolge);
+addLog('ok', barcode, '', moyBolge);
       } else {
         const errMsg = data.message || data.Message || data.error || JSON.stringify(data);
         showResult('error', '✗ HATA', errMsg, barcode, '');
