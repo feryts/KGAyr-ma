@@ -226,6 +226,16 @@
   .result.error   .result-title { color:#d00; }
   .result-body { font-size:13px; color:var(--text); line-height:1.6; }
   .result-barcode { font-size:11px; color:var(--muted); margin-top:4px; word-break:break-all; }
+  .result-moy {
+    margin-top:8px; padding:8px 12px;
+    background:rgba(0,166,81,0.08); border:1.5px solid rgba(0,166,81,0.25);
+    border-radius:8px; font-size:13px; font-weight:700;
+    color:var(--kg-green); display:none; align-items:center; gap:6px;
+  }
+  .result-moy.show { display:flex; }
+  .result-moy-label { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:2px; }
+  .result.error .result-moy { background:rgba(200,0,0,0.06); border-color:rgba(200,0,0,0.2); color:#d00; }
+  .log-moy { font-size:10px; font-weight:600; color:var(--kg-green); margin-top:3px; display:block; }
 
   /* ── STATS ── */
   .stats { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
@@ -295,154 +305,6 @@
 </div>
 
 <!-- LOGIN -->
-<div class="page active" id="loginPage">
-  <div class="card">
-    <!-- Arka plan şeffaf büyük logo -->
-    <svg class="card-bg-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M60 18C42.33 18 28 32.33 28 50c0 26.25 32 52 32 52s32-25.75 32-52C92 32.33 77.67 18 60 18zm0 46c-7.73 0-14-6.27-14-14s6.27-14 14-14 14 6.27 14 14-6.27 14-14 14z" fill="#00A651"/>
-    </svg>
-
-    <div class="login-header">
-      <div class="login-logo-wrap">
-        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M60 10C38.46 10 21 27.46 21 49c0 30.19 39 61 39 61s39-30.81 39-61C99 27.46 81.54 10 60 10zm0 53c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z" fill="white"/>
-        </svg>
-      </div>
-      <div class="login-title">Kolay Gelsin</div>
-      <div class="login-sub">Hesabınızla giriş yapın</div>
-    </div>
-    <div class="field">
-      <label>Kullanıcı Adı</label>
-      <input type="text" id="loginUser" placeholder="kullanıcı adı" autocomplete="username" />
-    </div>
-    <div class="field">
-      <label>Şifre</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" />
-    </div>
-    <button class="btn-primary" id="loginBtn" onclick="doLogin()">Giriş Yap</button>
-    <div class="login-err" id="loginErr"></div>
-  </div>
-</div>
-
-<!-- ANA SAYFA -->
-<div class="page" id="mainPage">
-  <div class="card">
-    <!-- Arka plan şeffaf büyük logo -->
-    <svg class="card-bg-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M60 18C42.33 18 28 32.33 28 50c0 26.25 32 52 32 52s32-25.75 32-52C92 32.33 77.67 18 60 18zm0 46c-7.73 0-14-6.27-14-14s6.27-14 14-14 14 6.27 14 14-6.27 14-14 14z" fill="#00A651"/>
-    </svg>
-
-    <div class="card-label">Barkod Ayrıştır</div>
-
-    <div class="btn-group">
-      <button class="btn-outline" id="cameraToggleBtn" onclick="toggleCamera()">📷 Kamera</button>
-      <button class="btn-outline" id="imgToggleBtn" onclick="toggleImgUpload()">🖼 Resimden Oku</button>
-    </div>
-
-    <label class="pref-row" id="cameraKeepOpenWrap">
-      <input type="checkbox" id="cameraKeepOpen" onchange="saveCameraPreference()" />
-      <span>Her okumadan sonra kamera açık kalsın</span>
-    </label>
-
-    <div class="camera-section" id="cameraSection">
-      <video id="cameraVideo" autoplay playsinline muted></video>
-      <div class="camera-overlay">
-        <div class="scan-frame">
-          <div class="corner-tr"></div>
-          <div class="corner-bl"></div>
-          <div class="scan-line"></div>
-        </div>
-      </div>
-      <div class="camera-status" id="cameraStatus">Barkodu çerçeveye getirin...</div>
-    </div>
-
-    <div class="img-upload-area" id="imgUploadArea">
-      <input type="file" id="imgFileInput" accept="image/*" onchange="handleImageFile(event)" />
-      <div class="img-upload-icon">📸</div>
-      <div class="img-upload-text">Barkod içeren resmi seçin<br><strong>Ekran görüntüsü de olabilir</strong></div>
-      <img id="imgPreview" class="img-preview" />
-      <div class="img-scanning" id="imgScanning"></div>
-    </div>
-
-    <div class="barcode-wrap">
-      <input type="text" class="barcode-input" id="barcodeInput" placeholder="Barkod numarası girin veya okutun..." autocomplete="off" />
-    </div>
-    <button class="btn-send" id="sendBtn" onclick="sendBarcode()">Ayrıştır</button>
-
-    <div class="result" id="result">
-      <div class="result-title" id="resultTitle"></div>
-      <div class="result-body" id="resultBody"></div>
-      <div class="result-barcode" id="resultBarcode"></div>
-    </div>
-  </div>
-
-  <div class="stats">
-    <div class="stat-box"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Toplam</div></div>
-    <div class="stat-box"><div class="stat-num" id="statOk">0</div><div class="stat-label">Basarili</div></div>
-    <div class="stat-box"><div class="stat-num" id="statFail">0</div><div class="stat-label">Hatali</div></div>
-  </div>
-
-  <div class="log-section">
-    <div class="log-header">
-      <div class="log-title">Islem Listesi <span class="log-count" id="logCount">0</span></div>
-      <span class="log-expire" id="logExpire"></span>
-      <button class="log-clear" onclick="clearLog()">Temizle</button>
-    </div>
-    <div class="log-list" id="logList">
-      <div class="empty-log">Henüz işlem yapılmadı</div>
-    </div>
-  </div>
-</div>
-
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-<script>
-  const LOG_KEY = 'kg_log';
-  const LOG_TTL = 24 * 60 * 60 * 1000; // 24 saat
-
-  let token = localStorage.getItem('kg_token') || '';
-  let savedUser = localStorage.getItem('kg_user') || '';
-  let stats = { total:0, ok:0, fail:0 };
-  let logItems = [];
-  let cameraKeepOpenPref = localStorage.getItem('kg_cam_keep') === '1';
-  let cameraOpen = false;
-  let imgUploadOpen = false;
-  let codeReader = null;
-  let scanCooldown = false;
-
-  // 24 saat geçmemiş logları yükle
-  function loadLog() {
-    try {
-      const raw = localStorage.getItem(LOG_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      const now = Date.now();
-      // 24 saatten eski kayıtları at
-      logItems = saved.filter(item => (now - item.ts) < LOG_TTL);
-      // Stats hesapla
-      stats = { total: logItems.length, ok: logItems.filter(i=>i.status==='ok').length, fail: logItems.filter(i=>i.status==='fail').length };
-      saveLog();
-    } catch(e) { logItems = []; }
-  }
-
-  function saveLog() {
-    localStorage.setItem(LOG_KEY, JSON.stringify(logItems));
-  }
-
-  function updateExpireInfo() {
-    if (!logItems.length) { document.getElementById('logExpire').textContent = ''; return; }
-    const oldest = logItems[logItems.length-1];
-    const remaining = LOG_TTL - (Date.now() - oldest.ts);
-    const hours = Math.floor(remaining / 3600000);
-    const mins = Math.floor((remaining % 3600000) / 60000);
-    document.getElementById('logExpire').textContent = `${hours}s ${mins}d sonra silinir`;
-  }
-
-  if (token) { loadLog(); showMain(savedUser); }
-
-  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
-  document.getElementById('barcodeInput').addEventListener('keydown', e => { if (e.key==='Enter') sendBarcode(); });
-
-  /* ── LOGIN ── */
   async function doLogin() {
     const user = document.getElementById('loginUser').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
@@ -648,16 +510,23 @@
       const data = await res.json();
       if (res.ok) {
         const msg = data.message || data.Message || data.data?.message || 'Ayrıştırma başarılı';
-        showResult('success', '✓ AYRIŞTIRMA TAMAM', msg, barcode);
-        addLog('ok', barcode);
+        const moy = data.distributionMoyWorkingArea || data.DistributionMoyWorkingArea
+                 || data.moyWorkingArea || data.MoyWorkingArea
+                 || data.data?.distributionMoyWorkingArea || data.data?.moyWorkingArea
+                 || data.data?.DistributionMoyWorkingArea
+                 || data.shipmentItem?.distributionMoyWorkingArea
+                 || data.shipmentItem?.DistributionMoyWorkingArea
+                 || '';
+        showResult('success', '✓ AYRIŞTIRMA TAMAM', msg, barcode, moy);
+        addLog('ok', barcode, '', moy);
       } else {
         const errMsg = data.message || data.Message || data.error || JSON.stringify(data);
-        showResult('error', '✗ HATA', errMsg, barcode);
-        addLog('fail', barcode, errMsg);
+        showResult('error', '✗ HATA', errMsg, barcode, '');
+        addLog('fail', barcode, errMsg, '');
       }
     } catch (err) {
-      showResult('error', '✗ BAĞLANTI HATASI', 'Sunucuya ulaşılamadı: ' + err.message, barcode);
-      addLog('fail', barcode, err.message);
+      showResult('error', '✗ BAĞLANTI HATASI', 'Sunucuya ulaşılamadı: ' + err.message, barcode, '');
+      addLog('fail', barcode, err.message, '');
     }
 
     btn.disabled = false; btn.classList.remove('loading'); btn.textContent = 'AYRIŞTIR';
@@ -670,19 +539,27 @@
     }
   }
 
-  function showResult(type, title, body, barcode) {
+  function showResult(type, title, body, barcode, moy) {
     const el = document.getElementById('result');
     el.className = 'result ' + type;
     document.getElementById('resultTitle').textContent = title;
     document.getElementById('resultBody').textContent = body;
     document.getElementById('resultBarcode').textContent = 'Barkod: ' + barcode;
+    const moyEl = document.getElementById('resultMoy');
+    const moyText = document.getElementById('resultMoyText');
+    if (moy) {
+      moyText.textContent = moy;
+      moyEl.classList.add('show');
+    } else {
+      moyEl.classList.remove('show');
+    }
   }
 
-  function addLog(status, barcode, errMsg) {
+  function addLog(status, barcode, errMsg, moy) {
     stats.total++; if (status==='ok') stats.ok++; else stats.fail++;
     const now = new Date();
     logItems.unshift({
-      status, barcode, errMsg,
+      status, barcode, errMsg, moy: moy || '',
       time: now.toLocaleTimeString('tr-TR'),
       date: now.toLocaleDateString('tr-TR'),
       ts: Date.now()
@@ -709,6 +586,7 @@
           <span class="log-num">#${stats.total - i}</span>
           ${item.barcode}
           ${item.errMsg ? '<br><span style="color:#e85d2f;font-size:10px">'+item.errMsg+'</span>' : ''}
+          ${item.moy ? '<span class="log-moy">📍 '+item.moy+'</span>' : ''}
         </div>
         <div class="log-meta">
           <span class="log-badge">${item.status==='ok'?'TAMAM':'HATA'}</span>
