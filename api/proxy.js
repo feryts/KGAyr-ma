@@ -10,6 +10,7 @@ export default async function handler(req, res) {
   const urlMap = {
     login: 'https://api.kolaygelsin.com/api/request/login',
     sort:  'https://api.kolaygelsin.com/api/request/SortShipmentItem',
+    getshipmentbyid: 'https://api.kolaygelsin.com/api/request/GetShipmentById',
   };
 
   const targetUrl = urlMap[endpoint];
